@@ -7,202 +7,37 @@ from openai import OpenAI
 import os
 
 # =============================================================================
-# 配置区（请根据实际情况修改仓库信息）
+# 配置区
 # =============================================================================
-GITHUB_USERNAME = "yinyao41"  # 替换为你的 GitHub 用户名
-GITHUB_REPO = "Company_transformation"  # 假设的仓库名，根据实际创建
-BRANCH = "master"  # 你的默认分支
+GITHUB_USERNAME = "yinyao41"
+GITHUB_REPO = "Company_transformation"
+BRANCH = "master"
 
-# 模板文件的精确路径（假设上传到 data/ 文件夹，根据实际调整，已新增 "转型升级方案-提示词.docx"）
 TEMPLATE_FILES = [
     "data/山东固丰体育产业有限公司转型升级分析报告.docx",
     "data/转型升级方案（六套）2026.03.docx",
-    "data/转型升级方案-提示词.docx",  # 新增文件
+    "data/转型升级方案-提示词.docx",
 ]
 
-# 系统提示词（基于新增文件 "转型升级方案-提示词.docx" 的内容，指导 AI 生成转型升级方案）
-SYSTEM_PROMPT = """
-# Role: 企业转型升级战略决策系统（ETSS）
-**系统定位**：基于量化决策算法的转型升级路径匹配引擎，输出简洁可执行的客户报告
-
-## Profile
-- **核心能力**：四层渐进诊断（基础画像→深度评估→算法匹配→风险对冲）、客户语言转换、一页纸决策呈现
-- **决策逻辑**：通过"企业类型（生产/贸易）-资金规模（S/M/L）-核心能力"三维坐标系进行方案匹配
-
-## Knowledge Base（六套方案决策矩阵）
-
-### 方案核心参数（内部判定标准）
-| 方案 | 核心机制 | 资金门槛 | 硬性资产要求 | 适用主体 | 风险等级 | 客户语言描述 |
-|------|---------|---------|-------------|---------|---------|-------------|
-| **方案一**<br>并购科创 | 资本运作<br>获取技术 | ≥5亿 | 投资部门≥5人 | 大型产业集团 | 高 | "通过并购直接拥有技术公司" |
-| **方案二**<br>技术赋能 | 科创反哺<br>产线升级 | 500万-<br>5000万 | 自主产线<br>生产车间 | **生产型企业**<br>（有工厂） | 中 | "引入技术升级现有生产线，产品变高端" |
-| **方案三**<br>渠道升级 | 代理高毛利<br>科创产品 | <100万 | 强销售渠道 | **贸易/经销商**<br>（无工厂） | 低 | "换代理高利润产品，同样渠道赚更多" |
-| **方案四**<br>渠道+股权 | 销售+投资<br>双重收益 | 1000万-<br>1亿 | 渠道+可投资金 | **实力渠道商** | 中高 | "既代理产品又投资入股，分享成长红利" |
-| **方案五**<br>基金股东 | 投资多项目 | ≥1亿 | 风控体系 | 中型以上企业 | 中高 | "成为投资基金股东，分散投资多个项目" |
-| **方案六**<br>母基金 | 投资多基金 | ≥10亿 | 战略投资部 | 大型集团 | 中 | "稳健投资多个基金，长期布局" |
-
-### 关键区分阈值（算法硬约束）
-**维度1：企业类型判定（互斥）**
-- **生产型（Tag A）**：自主产能占比>50% OR 有核心工艺 → **适用方案二，禁用方案三/四**
-- **贸易型（Tag B）**：渠道收入>70%且无自主工厂 → **适用方案三/四，禁用方案二**
-- **混合型（Tag C）**：按营收占比>50%的业务确定主标签
-
-**维度2：资金实力分级（不可逾越）**
-- **Size S（小微）**：实缴<1000万或年营收<5000万 → **仅限方案二、三，禁用方案一/四/五/六**
-- **Size M（中型）**：实缴1000万-1亿或年营收5000万-5亿 → **禁用方案一/六**
-- **Size L（大型）**：实缴>1亿或年营收>5亿 → **全方案可选**
-
-## Task
-对输入公司进行**四层内部诊断**（确保严谨），最终输出**客户友好版报告**（简洁可执行）。
-
-**输出结构要求**：
-1. **首页必须**：一页纸高管决策单（结论先行，30秒读懂）
-2. **次页开始**：详细实施报告（5-8页，含路线图、风险、行动清单）
-3. **内部档案**：详细评分表、排除逻辑（附在报告末尾或单独存档）
-
-## Workflow（四层执行引擎）
-
-### Phase 1: 基础画像构建（快速筛选）
-**搜索指令**（前3轮必须完成）：
-1. "公司名 天眼查 经营范围 注册资本 实缴资本"
-2. "公司名 官网 核心产品 业务模式 工厂"
-3. "公司名 年营收 财务数据 主营业务构成"
-
-**判定逻辑**：
-1. **类型判定**：有自主生产实体且生产收入>50% → Tag A；纯代理/贸易 → Tag B
-   - *立即排除冲突方案*（A型排除三/四，B型排除二）
-2. **规模判定**：根据实缴资本和营收确定Size S/M/L
-   - *立即排除资金门槛不符方案*
-
-**Phase 1输出**：Tag=[A/B], Size=[S/M/L], 候选方案=[剩余2-3个]
-
-### Phase 2: 深度能力评估（验证层）
-针对候选方案进行验证搜索：
-
-**如候选方案二（Tag A）**：
-- 搜索："公司名 专利 研发人员 生产线 技术改造"
-- 验证：专利≥10项或研发人员≥20人=技术承接力高；无专利且生产人员<10人=降级处理
-
-**如候选方案四（Tag B且Size M+）**：
-- 搜索："公司名 渠道覆盖 终端数量 资金周转率"
-- 验证：终端≥100个或区域覆盖≥3省=渠道控制力强；松散批发关系=降级处理
-
-### Phase 3: 量化匹配算法（决策层）
-对剩余候选方案进行**五维度评分**（内部使用，不展示给客户）：
-
-| 维度 | 权重 | 生产型评分标准 | 贸易型评分标准 |
-|------|------|---------------|---------------|
-| **资源匹配** | 30% | 产线完好度（新度>70%=5分） | 渠道密度（终端>200=5分） |
-| **能力承接** | 25% | 研发团队（>30人=5分） | 销售团队（>50人=5分） |
-| **需求紧迫** | 20% | 毛利率<15%=5分 | 代理产品毛利<8%=5分 |
-| **风险承受** | 15% | 现金储备>12个月=5分 | 库存周转<30天=5分 |
-| **战略协同** | 10% | 符合长期技术路线=5分 | 符合渠道扩张战略=5分 |
-
-**决策规则**：
-- **主方案**：总分最高且≥3.5分者
-- **对冲方案（Plan B）**：总分次高者，且必须与主方案风险互补
-- **冲突解决**：分差<0.5分时，选"现金流回流快"者
-
-### Phase 4: 客户语言转换（输出层）
-**关键转换原则**：
-- ❌ 内部："Tag A，Size M，方案二评分4.2/5，技术承接力4分..."
-- ✅ 客户："基于贵司扎实的生产制造基础（自有产线占比超60%，拥有省级技术中心），建议采用'技术赋能升级'模式"
-
-- ❌ 内部："五维度加权计算..."
-- ✅ 客户："贵司具备三大优势承接新技术：①现有产线可快速改造 ②技术团队可消化新工艺 ③现金流健康支撑投入"
-
-## Output Format（双轨输出）
-
-### 【第一层】一页纸高管决策单（必须首页呈现）
-
-```markdown
-# 🎯 转型升级战略决策单
-**[公司名]** | 诊断日期：202X年X月 | 保密级别：机密
-
-## 一、战略建议（30秒读懂）
-**推荐路径**：**方案[X] - [方案名称]**  
-*（如：方案二·科创技术赋能生产升级 / 方案三·高毛利产品渠道升级）*
-
-**一句话逻辑**：  
-> **[利用您的XX优势]，引入[XX技术/产品]，改造[现有产线/渠道]，实现从[低端现状]向[高端目标]的升级**
-
-**决策依据**：  
-✓ 匹配度高：您是[生产型/贸易型]企业，拥有[产线/渠道]核心资产，资金规模适中  
-✗ 排除其他：[具体排除原因，如"并购需5亿+现金门槛过高" / "纯渠道转型浪费生产优势"]
-
-## 二、投入产出速览（财务视角）
-| 关键指标 | 现状 | 18个月后目标 | 提升幅度 |
-|---------|------|-------------|---------|
-| **毛利率** | [X]% | [Y]% | **+[Z]个百分点** |
-| **总投入** | — | **[X]万元** | 分3期投入，不影响现金流 |
-| **回本周期** | — | **[X]个月** | 考虑新增利润与投入成本 |
-
-## 三、实施路线图（关键节点）
-现在 → 3个月 → 9个月 → 18个月  
-启动 → 试点 → 扩产 → 收获  
-([X]万) → ([X]万) → ([X]万) → (达标)
-
-**关键里程碑**：  
-- **T+3月**：首条产线改造完成/首批高毛利产品上市  
-- **T+9月**：试点成功（单产品毛利率≥[X]%）  
-- **T+18月**：全面切换，旧业务占比降至30%以下
-
-## 四、风险对冲（双保险设计）
-**Plan A（主方案）**：[方案名称]（风险等级：[中/高]）  
-**Plan B（保险方案）**：[备选方案]  
-**触发条件**：若6个月内试点未达预期，启动Plan B，已投入资金的[X]%可回收
-
-**最大风险预警**：  
-⚠️ [如：技术磨合不顺] → **对策**：分期付款，技术达标再付尾款
-
-## 五、决策点（本周需确认）
-☐ **战略决心**：是否同意投入[X]万进行升级？  
-☐ **启动资金**：首批[X]万资金是否到位？  
-☐ **项目负责人**：指派哪位高管全职推进？
-
-**下一步**：如上述三项确认，3个工作日内安排首批目标企业对接。
-【第二层】详细实施报告（次页开始，5-8页）
-结构要求：
-1. 为什么选择这个方案？（用客户语言解释匹配逻辑，隐藏算法细节）
-2. 为什么不选其他方案？（表格对比，每行列出一个被排除的方案及通俗原因）
-3. 具体怎么操作？（三阶段路线图，含 checklist 和资金分阶段投入计划）
-4. 风险提示与应对（明确Plan B触发条件和切换成本）
-5. 立即行动清单（本月/下月具体可执行任务）
-禁止出现：
-· 评分表、权重、Tag/Size等技术标签
-· "五维度"、"算法匹配"、"量化评分"等术语
-· 复杂的排除逻辑说明
-【第三层】内部技术档案（报告末尾或单独文件）
-仅用于存档或客户要求时提供：
-· 六套方案匹配度详表（含评分）
-· 企业画像原始数据（专利数、渠道数、现金流月数等）
-· 排除方案的具体阈值判定依据
-Constraints（铁律）
-1. 类型判定红线：生产型企业（Tag A）绝对禁止推荐方案三/四；贸易型企业（Tag B）绝对禁止推荐方案二。混合型必须明确主次（营收占比>50%）。
-2. 资金门槛硬约束：Size S企业严禁推荐方案一/四/五/六，即使"企业有意向"也应劝阻。
-3. 输出顺序强制：必须先输出"一页纸高管决策单"，再输出详细报告。不得先给详细分析再给结论。
-4. 语言转换强制：所有内部评分必须转化为客户语言（如"技术承接力4分"→"您有成熟技术团队可快速掌握新工艺"）。
-5. 风险对冲强制：必须提供Plan B，并用"保险方案/备用路径"等客户易懂词汇描述。
-6. 量化底线：客户报告中所有预期收益必须带数字区间（如"毛利率提升5-8个百分点"），禁止"显著提升"等模糊词。
-Self-Check（输出前强制验证）
-· [ ] 首页检验：第一页是否包含"一句话逻辑"、"投入产出表"、"三阶段路线图"、"决策点"四要素？
-· [ ] 类型红线：推荐方案是否与企业类型严格匹配（生产型→方案二，贸易型→方案三/四）？
-· [ ] 客户语言：报告中是否删除了"Tag"、"Size"、"评分"、"权重"等内部术语？
-· [ ] 风险对冲：是否明确列出Plan B及触发条件（时间/资金/指标）？
-· [ ] 排除说明：被排除的方案是否用客户语言解释了原因（如"并购需要5亿现金，门槛过高"）？
-· [ ] 行动清单：是否提供了"本月内完成"和"下月完成"的具体可执行任务？
-如果以上任何一项未通过，返回修正，不得输出。
-
-必须严格参考模板内容，不得编造信息。输出格式为 Markdown，便于阅读。
-"""
+# =============================================================================
+# 精简后的系统提示词（关键修复：不再塞入几千字模板）
+# =============================================================================
+SYSTEM_PROMPT = """你是一位专业的公司转型升级咨询专家。
+请严格按照「转型升级方案-提示词.docx」中的四层诊断流程（Phase 1~4）、六套方案决策矩阵、输出格式（一页纸决策单 + 详细实施报告）和所有铁律要求，
+为用户提供的公司生成一份完整、简洁、可执行的转型升级方案报告。
+必须包含：
+- 一页纸高管决策单（首页）
+- 详细实施报告（含路线图、风险、行动清单）
+- 使用客户语言，禁止出现 Tag、Size、评分、权重等内部术语
+- 必须提供 Plan B 对冲方案
+现在请开始生成。"""
 
 # =============================================================================
 # 阿里通义千问客户端
 # =============================================================================
 DASHSCOPE_API_KEY = st.secrets.get("DASHSCOPE_API_KEY", os.getenv("DASHSCOPE_API_KEY"))
-
 if not DASHSCOPE_API_KEY:
-    st.error("缺少 DASHSCOPE_API_KEY！请在 Streamlit Cloud → Settings → Secrets 中添加")
+    st.error("缺少 DASHSCOPE_API_KEY！请在 Streamlit Secrets 中添加")
     st.stop()
 
 client = OpenAI(
@@ -213,95 +48,93 @@ client = OpenAI(
 MODEL_NAME = "qwen-max"
 
 # =============================================================================
-# 从 GitHub 下载并解析模板文件
+# 加载模板（静默处理 + 更强截断）
 # =============================================================================
-@st.cache_data(show_spinner="正在从 GitHub 下载并解析模板文件...")
+@st.cache_data(show_spinner="正在加载模板...")
 def load_templates():
     templates = []
     for rel_path in TEMPLATE_FILES:
         raw_url = f"https://raw.githubusercontent.com/{GITHUB_USERNAME}/{GITHUB_REPO}/{BRANCH}/{rel_path}"
-        
         try:
-            r = requests.get(raw_url, timeout=15)
+            r = requests.get(raw_url, timeout=12)
             r.raise_for_status()
-            
             doc = Document(BytesIO(r.content))
             text = "\n".join(p.text.strip() for p in doc.paragraphs if p.text.strip())
-            
             if text:
-                display_name = rel_path.split("/")[-1].replace(".docx", "")
-                templates.append(f"【{display_name}】\n{text}\n{'─' * 80}\n")
-            else:
-                st.warning(f"模板文件为空：{rel_path}")
-        except Exception as e:
-            st.error(f"读取失败 {rel_path}：{str(e)}")
-            continue
-
-    if not templates:
-        st.error("模板文件加载失败！请确认已上传到 GitHub。")
-        st.stop()
-
+                name = rel_path.split("/")[-1].replace(".docx", "")
+                templates.append(f"【{name}】\n{text}\n{'─' * 60}\n")
+        except:
+            continue   # 文件不存在时静默跳过
     full_text = "".join(templates)
-    
-    # 自动截断防超限
-    MAX_CHARS = 25000
-    if len(full_text) > MAX_CHARS:
-        full_text = full_text[:MAX_CHARS] + "\n\n【注意：模板全文已自动截断】"
-    
+    # 更严格截断（防止超限）
+    if len(full_text) > 18000:
+        full_text = full_text[:18000] + "\n\n【模板已自动截断】"
     return full_text
 
-# 执行加载
 TEMPLATES_TEXT = load_templates()
 
 # =============================================================================
-# Streamlit 界面（极简设计：只剩主标题 + 输入区 + 输出）
+# Streamlit 界面
 # =============================================================================
 st.set_page_config(page_title="公司转型升级方案生成器", layout="wide")
 st.title("🏭 公司转型升级方案生成器")
 
-# 用户输入区
 with st.form(key="company_info_form"):
-    company_name = st.text_input("公司名称", placeholder="例如：山东固丰体育产业有限公司")
-    industry = st.text_input("所属行业", placeholder="例如：体育产业")
-    current_status = st.text_area("公司当前情况描述", placeholder="描述公司规模、问题、优势等（可选）")
-    additional_info = st.file_uploader("上传公司相关文件（可选，支持 PDF/DOCX/TXT）", type=["pdf", "docx", "txt"])
+    company_name = st.text_input("公司名称*", placeholder="例如：北欧无人机和固态电池项目")
+    industry = st.text_input("所属行业*", placeholder="例如：新能源")
+    current_status = st.text_area("公司当前情况描述*", placeholder="描述公司规模、问题、优势等...", height=150)
+    additional_info = st.file_uploader("上传公司相关文件（可选）", type=["pdf", "docx", "txt"])
     
     submit_button = st.form_submit_button(label="生成转型升级方案")
 
 if submit_button:
-    if not company_name or not industry:
-        st.error("请至少输入公司名称和所属行业！")
+    if not company_name or not industry or not current_status:
+        st.error("请填写带*的必填项！")
     else:
-        # 处理上传文件（如果有）
         extra_text = ""
         if additional_info:
-            if additional_info.type == "application/pdf":
-                st.warning("PDF 处理暂不支持，请上传 DOCX 或 TXT。")
-            elif additional_info.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                doc = Document(BytesIO(additional_info.read()))
-                extra_text = "\n".join(p.text.strip() for p in doc.paragraphs if p.text.strip())
-            else:  # TXT
-                extra_text = additional_info.read().decode("utf-8")
-        
-        # 构建用户输入上下文
-        user_context = f"公司名称：{company_name}\n行业：{industry}\n当前情况：{current_status}\n附加信息：{extra_text}"
-        
-        # 生成方案
+            try:
+                if additional_info.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                    doc = Document(BytesIO(additional_info.read()))
+                    extra_text = "\n".join(p.text.strip() for p in doc.paragraphs if p.text.strip())
+                else:
+                    extra_text = additional_info.read().decode("utf-8")
+            except:
+                st.warning("补充文件解析失败，将使用文字描述")
+
+        user_context = f"""
+公司名称：{company_name}
+所属行业：{industry}
+当前情况：{current_status}
+补充材料：{extra_text}
+"""
+
         with st.spinner("正在调用 AI 生成方案..."):
             try:
                 response = client.chat.completions.create(
                     model=MODEL_NAME,
                     messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT + "\n\n模板内容：\n" + TEMPLATES_TEXT},
-                        {"role": "user", "content": f"基于模板，为以下公司生成转型升级方案：\n{user_context}"}
+                        {"role": "system", "content": SYSTEM_PROMPT + "\n\n以下是转型升级模板内容：\n" + TEMPLATES_TEXT},
+                        {"role": "user", "content": f"基于模板，为以下公司生成完整转型升级方案：\n{user_context}"}
                     ],
                     temperature=0.3,
-                    max_tokens=3000,
+                    max_tokens=2800,          # 关键：降低防止超限
+                    stream=False
                 )
-                
                 scheme = response.choices[0].message.content
-                st.markdown("### 生成的转型升级方案")
+                st.success("✅ 生成完成！")
                 st.markdown(scheme)
-                
+
+                st.download_button(
+                    label="📥 下载方案（Markdown）",
+                    data=scheme,
+                    file_name=f"{company_name}_转型升级方案.md",
+                    mime="text/markdown"
+                )
+
             except Exception as e:
-                st.error(f"AI 调用失败：{str(e)}")
+                error_str = str(e).lower()
+                if "context length" in error_str or "maximum" in error_str:
+                    st.error("提示词过长，请简化公司描述后重试")
+                else:
+                    st.error(f"AI 调用失败：{str(e)}")
