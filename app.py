@@ -65,7 +65,7 @@ FULL_SYSTEM_PROMPT += """
 # =============================================================================
 st.set_page_config(page_title="转型升级方案", layout="wide")
 st.title("🏭 企业转型升级方向生成器")
-st.caption(" ")
+st.caption("✅")
 
 with st.form(key="company_info_form"):
     company_name = st.text_input("公司名称*", placeholder="例如：山东固丰体育产业有限公司")
