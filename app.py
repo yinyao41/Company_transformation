@@ -23,7 +23,7 @@ MODEL_NAME = "qwen-plus"  # 推荐使用 plus 更快，必要时改回 qwen-max
 # =============================================================================
 
 # =============================================================================
-SCHEME_DOC_PATH = "data/附件2-4-1 八套转型升级方案.202605.docx"
+SCHEME_DOC_PATH = "data/附件2-4-1 九套转型升级方案.202605.docx"
 
 FULL_SYSTEM_PROMPT = """【角色设定】
 你是一位资深的产业战略咨询专家，专注于传统企业转型升级与科创产业融合领域。
@@ -32,8 +32,8 @@ FULL_SYSTEM_PROMPT = """【角色设定】
 请在输出的最前面明确添加以下提示语句：
 **重要提示：本方案仅供参考，不构成任何正式的投资、经营或法律建议。实际操作请咨询专业律师、财务顾问及相关行业专家。**
 
-【八套转型升级方案库】
-以下是完整的八套方案内容（已从文档中读取）：
+【九套转型升级方案库】
+以下是完整的九套方案内容（已从文档中读取）：
 """
 
 # 自动加载文档内容并拼接到 Prompt
@@ -42,7 +42,7 @@ try:
         doc = Document(SCHEME_DOC_PATH)
         doc_text = "\n".join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
         FULL_SYSTEM_PROMPT += doc_text
-        st.success("✅ 已成功加载八套方案文档")
+        st.success("✅ 已成功加载九套方案文档")
     else:
         FULL_SYSTEM_PROMPT += "（方案文档加载失败，请检查 data 目录）"
 except Exception as e:
@@ -50,7 +50,7 @@ except Exception as e:
 
 FULL_SYSTEM_PROMPT += """
 【输出要求】
-请严格按照以下格式为用户公司生成**八套**专属转型升级方案：
+请严格按照以下格式为用户公司生成**九套**专属转型升级方案：
 1. 结构要求（每个方案必须包含）：
    - 方案核心定位（1-2句话）
    - [公司名]专属落地方案（3-4条具体路径，结合公司实际）
@@ -64,7 +64,7 @@ FULL_SYSTEM_PROMPT += """
 # Streamlit 界面
 # =============================================================================
 st.set_page_config(page_title="转型升级方案", layout="wide")
-st.title("🏭 企业转型升级八套方案生成器")
+st.title("🏭 企业转型升级九套方案生成器")
 st.caption("已自动加载 data 目录下的方案文档")
 
 with st.form(key="company_info_form"):
@@ -74,7 +74,7 @@ with st.form(key="company_info_form"):
                                   placeholder="描述公司规模、问题、优势、核心业务、渠道、品牌等...", 
                                   height=200)
     additional_info = st.file_uploader("额外上传补充文件（可选）", type=["pdf", "docx", "txt"])
-    submit_button = st.form_submit_button(label="生成八套转型升级方案")
+    submit_button = st.form_submit_button(label="生成九套转型升级方案")
 
 if submit_button:
     if not company_name or not industry or not current_status:
@@ -98,13 +98,13 @@ if submit_button:
 补充材料：{extra_text}
 """
 
-        with st.spinner("正在生成八套专属方案...（约 30-60 秒）"):
+        with st.spinner("正在生成九套专属方案...（约 30-60 秒）"):
             try:
                 response = client.chat.completions.create(
                     model=MODEL_NAME,
                     messages=[
                         {"role": "system", "content": FULL_SYSTEM_PROMPT},
-                        {"role": "user", "content": f"请为以下公司生成完整转型升级八套专属方案：\n{user_context}"}
+                        {"role": "user", "content": f"请为以下公司生成完整转型升级九套专属方案：\n{user_context}"}
                     ],
                     temperature=0.3,
                     max_tokens=7500,
@@ -119,7 +119,7 @@ if submit_button:
                 st.download_button(
                     label="📥 下载方案（Markdown）",
                     data=scheme,
-                    file_name=f"{company_name}_转型升级八套方案.md",
+                    file_name=f"{company_name}_转型升级九套方案.md",
                     mime="text/markdown"
                 )
             except Exception as e:
