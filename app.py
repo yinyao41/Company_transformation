@@ -105,3 +105,22 @@ if submit_button:
                     messages=[
                         {"role": "system", "content": FULL_SYSTEM_PROMPT},
                         {"role": "user", "content": f"请为以下公司生成完整转型升级九套专属方案：\n{user_context}"}
+                    ],
+                    temperature=0.3,
+                    max_tokens=7500,
+                    stream=False
+                )
+                scheme = response.choices[0].message.content
+
+                st.success("✅ 生成完成！")
+                st.warning("**重要提示：本方案仅供参考，不构成任何正式的投资、经营或法律建议。**")
+                st.markdown(scheme)
+
+                st.download_button(
+                    label="📥 下载方案（Markdown）",
+                    data=scheme,
+                    file_name=f"{company_name}_转型升级九套方案.md",
+                    mime="text/markdown"
+                )
+            except Exception as e:
+                st.error(f"AI 调用失败：{str(e)}")
