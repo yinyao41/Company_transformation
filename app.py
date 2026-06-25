@@ -42,7 +42,7 @@ try:
         doc = Document(SCHEME_DOC_PATH)
         doc_text = "\n".join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
         FULL_SYSTEM_PROMPT += doc_text
-        st.success("✅ ")
+        st.success(" ")
     else:
         FULL_SYSTEM_PROMPT += "（方案文档加载失败，请检查 data 目录）"
 except Exception as e:
