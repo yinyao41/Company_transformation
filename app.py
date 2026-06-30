@@ -23,7 +23,7 @@ MODEL_NAME = "qwen-plus"  # 推荐使用 plus 更快，必要时改回 qwen-max
 # =============================================================================
 
 # =============================================================================
-SCHEME_DOC_PATH = "data/附件2-4-1 九套转型升级方案.202605.docx"
+SCHEME_DOC_PATH = "data/附件2-4-1 九套转型升级方向.202605.docx"
 
 FULL_SYSTEM_PROMPT = """【角色设定】
 你是一位资深的产业战略咨询专家，专注于传统企业转型升级与科创产业融合领域。
@@ -32,7 +32,7 @@ FULL_SYSTEM_PROMPT = """【角色设定】
 请在输出的最前面明确添加以下提示语句：
 **重要提示：本方案仅供参考，不构成任何正式的投资、经营或法律建议。实际操作请咨询专业律师、财务顾问及相关行业专家。**
 
-【九套转型升级方案库】
+【九套转型升级方向库】
 以下是完整的九套方向内容（已从文档中读取）：
 """
 
@@ -44,9 +44,9 @@ try:
         FULL_SYSTEM_PROMPT += doc_text
         st.success(" ")
     else:
-        FULL_SYSTEM_PROMPT += "（方案文档加载失败，请检查 data 目录）"
+        FULL_SYSTEM_PROMPT += "（方向文档加载失败，请检查 data 目录）"
 except Exception as e:
-    FULL_SYSTEM_PROMPT += f"（方案文档加载失败: {str(e)}）"
+    FULL_SYSTEM_PROMPT += f"（方向文档加载失败: {str(e)}）"
 
 FULL_SYSTEM_PROMPT += """
 【输出要求】
@@ -113,7 +113,7 @@ if submit_button:
                 scheme = response.choices[0].message.content
 
                 st.success("✅ 生成完成！")
-                st.warning("**重要提示：本方案仅供参考，不构成任何正式的投资、经营或法律建议。**")
+                st.warning("**重要提示：本方向仅供参考，不构成任何正式的投资、经营或法律建议。**")
                 st.markdown(scheme)
 
                 st.download_button(
