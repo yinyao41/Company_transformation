@@ -57,7 +57,7 @@ FULL_SYSTEM_PROMPT += """
    - 转型核心优势（4条）
    - 核心实施要点（4条）
 2. 必须深度定制，结合公司行业、业务、资源、痛点。
-3. 语言专业，使用“第二曲线”、“精益红利”等术语。
+3. 语言专业，使用"第二曲线"、"精益红利"等术语。
 """
 
 # =============================================================================
@@ -67,10 +67,14 @@ st.set_page_config(page_title="转型升级方向", layout="wide")
 st.title("🏭 企业转型升级方向生成器")
 st.caption("✅")
 
+# ====================== 修改点：预填充默认内容 ======================
+DEFAULT_CURRENT_STATUS = """成立于1996年6月19日，河北省建筑装饰行业十强企业，石家庄市建筑装饰行业十强企业，连续9年被评为省市"守合同重信用单位"以建筑装饰、土木工程、建筑幕墙设计施工为龙头，涵盖：机电设备安装、钢结构工程、管线工程金属门窗安装、建筑智能化、安防系统施工装饰材料生产主要承揽高档宾馆、星级酒店、办公楼、公寓楼、大型商场、体育场馆、娱乐场所、机场、地铁、医院、学校等建筑装饰工程。年营业额数亿。"""
+
 with st.form(key="company_info_form"):
-    company_name = st.text_input("公司名称*", placeholder="例如：山东固丰体育产业有限公司")
-    industry = st.text_input("所属行业*", placeholder="例如：体育产业")
-    current_status = st.text_area("公司当前情况描述*", 
+    company_name = st.text_input("公司名称*", value="蓝翔工程建设有限公司", placeholder="例如：山东固丰体育产业有限公司")
+    industry = st.text_input("所属行业*", value="建筑装饰", placeholder="例如：体育产业")
+    current_status = st.text_area("公司当前情况描述*",
+                                  value=DEFAULT_CURRENT_STATUS,
                                   placeholder="描述公司规模、问题、优势、核心业务、渠道、品牌等...", 
                                   height=200)
     additional_info = st.file_uploader("额外上传补充文件（可选）", type=["pdf", "docx", "txt"])
